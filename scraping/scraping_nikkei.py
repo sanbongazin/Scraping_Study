@@ -1,12 +1,12 @@
 # coding:UTF-8
 import urllib.request, urllib.error as ul2
 # URLにアクセスするとHTMLが帰ってくる
-with urllib.request.urlopen("http://www.nikkei.com") as url:
-    s = url.read()
+with urllib.request.urlopen("https://tenki.jp/forecast/3/14/4310/11225/") as url:
+    html = url.read()
 from bs4 import BeautifulSoup
 
 # htmlをBeautifulsoupで扱う
-soup = BeautifulSoup(s, "html.parser")
+soup = BeautifulSoup(html, "html.parser")
 
 # タイトル要素を取得。 ＝＞<title>経済、株価、ビジネス、政治のニュース:日経電子版</>・・・
 title_tag = soup.title
