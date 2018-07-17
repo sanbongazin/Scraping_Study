@@ -58,5 +58,5 @@ for tag in span:
         pass
 
 # 摘出した日経平均株価を出力します。
-print (today_weather)
-print (today_temp)
+print ("天気は" + today_weather)
+print ("最高気温は" + today_temp + "度")
