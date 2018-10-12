@@ -8,7 +8,7 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-from __future__ import division
+# from __future__ import division
 import sys, os, pickle
 import numpy.random as rd
 
@@ -22,9 +22,9 @@ import matplotlib.pyplot as plt
 
 
 # その他コンフィグ（いつもの）
-get_ipython().run_line_magic('config', 'IPCompleter.greedy=True')
-get_ipython().run_line_magic('matplotlib', 'inline')
-get_ipython().run_line_magic('matplotlib', 'notebook')
+# get_ipython().run_line_magic('config', 'IPCompleter.greedy=True')
+# get_ipython().run_line_magic('matplotlib', 'inline')
+# get_ipython().run_line_magic('matplotlib', 'notebook')
 
 #画像取り込みデータのオープン
 # !ls session_MNIST_Image*
@@ -94,16 +94,15 @@ sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 saver = tf.train.Saver()
 saver.restore(sess, '/Users/yamamotomasaomi/Documents/GitHub/Python_Study/opencv/learn_result_2cell-2000')
-# session = saver.restore(sess, '/Users/yamamotomasaomi/Documents/GitHub/Python_Study/opencv/learn_result_2cell-2000')
 
 
 # In[ ]:
 
 
 import cv2 as cv
-from IPython.core.debugger import Pdb; Pdb().set_trace()
+# from IPython.core.debugger import Pdb; Pdb().set_trace()
 
-real_image = []
+real_image, x_edit = [],[]
 
 if __name__ == '__main__':
     # 定数定義
@@ -132,7 +131,6 @@ if __name__ == '__main__':
     cv.namedWindow(GAUSSIAN_WINDOW_NAME)
     
     i=0
-    c=0
     # 変換処理ループ
     while end_flag == True:
 
@@ -141,29 +139,30 @@ if __name__ == '__main__':
         img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         face_list = cascade.detectMultiScale(img_gray, minSize=(100, 100))
         # 検出した顔に印を付ける
-        for (x, y, w, h) in face_list:
+        # Xの値が被ってるぅぅぅぅぅぅぅ！！
+        for (x_, y, w, h) in face_list:
             color = (0, 0, 225)
             pen_w = 3
             cv.imwrite("cutted.jpg",cv.cvtColor(img,cv.COLOR_BGR2GRAY))
             img_read = cv.imread("cutted.jpg")
                     # フレーム表示
-            cv.rectangle(img_gray, (x, y), (x+w, y+h), color, thickness = pen_w)
-            img_cutter = img_read[y:y+h,x:x+w]
-            cv.imwrite("cutted2.jpg",img_cutter)
-            img_read_cut = cv.imread("cutted2.jpg")
+            cv.rectangle(img_gray, (x_, y), (x_+w, y+h), color, thickness = pen_w)
+            img_cutter = img_read[y:y+h,x_:x_+w]
+            cv.imwrite("famiimager/cutted"+str(i)+".jpg",img_cutter)
+            img_read_cut = cv.imread("famiimager/cutted"+str(i)+".jpg")
             img_read_resized = cv.resize(img_read_cut,(28,28))
             real_image.append(img_read_resized.flatten().astype(np.float32)/255.0)
+            x_tmp = np.reshape(real_image[i],(-1,2352))
+            x_edit.append(x_tmp)
+            p_val = sess.run(p, feed_dict={x:x_edit[i],keep_prob:1.0})
+            print(p_val[0])
             i+=1
-        
-        if i>=c and i != 0 :
-            p_val = sess.run(p, feed_dict={x:real_image[c],keep_prob:1.0})
-            c+=1
+
         
         
         #今度は、これを画面上に表示できれば、リソースの測定は可能。ただし、正確性にかける可能性がある。
 #         今度は、その画像を学習させることもできるので、これで正確性は増す可能性がある。
 # というか、２層CNNでこの結果なんだから、正確性が実用的ではないかもしれない
-#         print(np.argmax(p_val[0]))
         cv.imshow(GAUSSIAN_WINDOW_NAME, img_gray)
         # Escキーで終了
         key = cv.waitKey(INTERVAL)
