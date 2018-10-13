@@ -9,6 +9,9 @@ from sklearn.cross_validation import train_test_split
 from PIL import Image
 import cv2 as cv
 import os
+import numpy.random as rd
+
+np.random.seed(19960604)
 
 class NotFaminist:
     def __init__(self):
@@ -29,7 +32,8 @@ class NotFaminist:
                     print ("Skip a corrupted file: " + file)
                     continue
                 labels.append(label)
-            train_images, test_images, train_labels, test_labels =             train_test_split(images, labels, test_size=0.2, random_state=0)
+            train_images, test_images, train_labels, test_labels = \
+            train_test_split(images, labels, test_size=0.2, random_state=0)
         
         class train:
             def __init__(self):
@@ -39,6 +43,8 @@ class NotFaminist:
                 
             def next_batch(self, num):
                 if self.batch_counter + num >= len(self.labels):
+                    rd.shuffle(images)
+                    rd.shuffle(labels)
                     batch_images = self.images[self.batch_counter:]
                     batch_labels = self.labels[self.batch_counter:]
                     left = num - len(batch_labels)
@@ -144,7 +150,7 @@ h_pool2 = tf.nn.max_pool(h_conv2_cutoff, ksize=[1, 2, 2, 1],
 h_pool2_flat = tf.reshape(h_pool2, [-1, 3*7*7*num_filters2])
 
 num_units1 = 3*7*7*num_filters2
-num_units2 = 510//3
+num_units2 = 510
 
 w2 = tf.Variable(tf.truncated_normal([num_units1, num_units2]))
 b2 = tf.Variable(tf.constant(0.1, shape=[num_units2]))
@@ -204,12 +210,4 @@ for _ in range (2000):
 saver.save(sess, '/Users/yamamotomasaomi/Documents/GitHub/Python_Study/opencv/learn_result_2cell', global_step=i)
 
 
-# In[12]:
-
-
-
-#確認表示
-print("image:shape=%s"%(np.shape(mnist.train.images)))
-print("label:shape=%s"%(np.ndim(mnist.train.labels)))
-# print(batch_ts)
 

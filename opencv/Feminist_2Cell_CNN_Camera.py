@@ -73,7 +73,7 @@ h_pool2 = tf.nn.max_pool(h_conv2_cutoff, ksize=[1, 2, 2, 1],
 h_pool2_flat = tf.reshape(h_pool2, [-1, 3*7*7*num_filters2])
 
 num_units1 = 3*7*7*num_filters2
-num_units2 = 510//3
+num_units2 = 510
 
 w2 = tf.Variable(tf.truncated_normal([num_units1, num_units2]))
 b2 = tf.Variable(tf.constant(0.1, shape=[num_units2]))
@@ -93,7 +93,9 @@ p = tf.nn.softmax(tf.matmul(hidden2_drop, w0) + b0)
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 saver = tf.train.Saver()
-saver.restore(sess, '/Users/yamamotomasaomi/Documents/GitHub/Python_Study/opencv/learn_result_2cell-2000')
+saver.restore(sess, '/Users/yamamotomasaomi/Documents/GitHub/Python_Study/opencv/learn_result_2cell_ver1.1-2000')
+# ということで、演算はWindowsがやっても問題はない。しかし、画像の追加がやりづれlえので、USBが必要となりそう。
+# saver.restore(sess, '/Users/yamamotomasaomi/Documents/GitHub/Python_Study/opencv/learn_result_2cell_2000')
 
 
 # In[ ]:
@@ -139,7 +141,6 @@ if __name__ == '__main__':
         img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         face_list = cascade.detectMultiScale(img_gray, minSize=(100, 100))
         # 検出した顔に印を付ける
-        # Xの値が被ってるぅぅぅぅぅぅぅ！！
         for (x_, y, w, h) in face_list:
             color = (0, 0, 225)
             pen_w = 3
@@ -155,7 +156,7 @@ if __name__ == '__main__':
             x_tmp = np.reshape(real_image[i],(-1,2352))
             x_edit.append(x_tmp)
             p_val = sess.run(p, feed_dict={x:x_edit[i],keep_prob:1.0})
-            print(p_val[0])
+            print(np.argmax(p_val[0]))
             i+=1
 
         
