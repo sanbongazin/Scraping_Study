@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 # from __future__ import division
 import sys, os, pickle
 import numpy.random as rd
+import subprocess as sb
+from memory_profiler import profile
+from timer import Timer
 
 from scipy.misc import imread
 
@@ -94,92 +97,98 @@ sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 saver = tf.train.Saver()
 saver.restore(sess, '/Users/yamamotomasaomi/Documents/GitHub/Python_Study/opencv/learn_result_2cell_ver1.1-2000')
-# ということで、演算はWindowsがやっても問題はない。しかし、画像の追加がやりづれlえので、USBが必要となりそう。
+# ということで、演算はWindowsがやっても問題はない。しかし、画像の追加がやりづれえので、USBが必要となりそう。
 # saver.restore(sess, '/Users/yamamotomasaomi/Documents/GitHub/Python_Study/opencv/learn_result_2cell_2000')
 
 
-# In[ ]:
-
-
+#In[]:
 import cv2 as cv
-# from IPython.core.debugger import Pdb; Pdb().set_trace()
 
 real_image, x_edit = [],[]
 
-if __name__ == '__main__':
-    # 定数定義
-    ESC_KEY = 27     # Escキー
-    INTERVAL= 33     # 待ち時間
-    FRAME_RATE = 30  # fps
+@profile
+def Detect(x_,y,w,h,img,img_gray,i):
+    color = (0, 0, 225)
+    pen_w = 3
+    cv.imwrite("cutted.jpg",cv.cvtColor(img,cv.COLOR_BGR2GRAY))
+    img_read = cv.imread("cutted.jpg")
+    # フレーム表示
+    cv.rectangle(img_gray, (x_, y), (x_+w, y+h), color, thickness = pen_w)
+    img_cutter = img_read[y:y+h,x_:x_+w]
+    cv.imwrite("famiimager/cutted"+str(i)+".jpg",img_cutter)
+    img_read_cut = cv.imread("famiimager/cutted"+str(i)+".jpg")
+    img_read_resized = cv.resize(img_read_cut,(28,28))
+    real_image.append(img_read_resized.flatten().astype(np.float32)/255.0)
+    x_tmp = np.reshape(real_image[i],(-1,2352))
+    x_edit.append(x_tmp)
+    pred = Prediction(x_edit,i)
+    print(pred)
+    i+=1
 
-    ORG_WINDOW_NAME = "org"
-    GAUSSIAN_WINDOW_NAME = "gaussian"
+def Prediction(x_edit,i):
+    p_val = sess.run(p, feed_dict={x:x_edit[i],keep_prob:1.0})
+    return np.argmax(p_val[0])
 
-    DEVICE_ID = 0
 
-    # 分類器の指定
-    cascade_file = "cascade.xml"
-    cascade = cv.CascadeClassifier(cascade_file)
+def camera():
+    if __name__ == '__main__':
+        # 定数定義
+        ESC_KEY = 27     # Escキー
+        INTERVAL= 33     # 待ち時間
+        FRAME_RATE = 30  # fps
 
-    # カメラ映像取得
-    cap = cv.VideoCapture(DEVICE_ID)
+        ORG_WINDOW_NAME = "org"
+        GAUSSIAN_WINDOW_NAME = "gaussian"
 
-    # 初期フレームの読込
-    end_flag, c_frame = cap.read()
-    height, width, channels = c_frame.shape
+        DEVICE_ID = 0
 
-    # ウィンドウの準備
-    cv.namedWindow(ORG_WINDOW_NAME)
-    cv.namedWindow(GAUSSIAN_WINDOW_NAME)
+        # 分類器の指定
+        cascade_file = "cascade.xml"
+        cascade = cv.CascadeClassifier(cascade_file)
+
+        # カメラ映像取得
+        cap = cv.VideoCapture(DEVICE_ID)
+
+        # 初期フレームの読込
+        end_flag, c_frame = cap.read()
+        height, width, channels = c_frame.shape
+
+        # ウィンドウの準備
+        cv.namedWindow(ORG_WINDOW_NAME)
+        cv.namedWindow(GAUSSIAN_WINDOW_NAME)
     
-    i=0
-    # 変換処理ループ
-    while end_flag == True:
+        i=0
+        # 変換処理ループ
+        while end_flag == True:
 
-        # 画像の取得と顔の検出
-        img = c_frame
-        img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-        face_list = cascade.detectMultiScale(img_gray, minSize=(100, 100))
-        # 検出した顔に印を付ける
-        for (x_, y, w, h) in face_list:
-            color = (0, 0, 225)
-            pen_w = 3
-            cv.imwrite("cutted.jpg",cv.cvtColor(img,cv.COLOR_BGR2GRAY))
-            img_read = cv.imread("cutted.jpg")
-                    # フレーム表示
-            cv.rectangle(img_gray, (x_, y), (x_+w, y+h), color, thickness = pen_w)
-            img_cutter = img_read[y:y+h,x_:x_+w]
-            cv.imwrite("famiimager/cutted"+str(i)+".jpg",img_cutter)
-            img_read_cut = cv.imread("famiimager/cutted"+str(i)+".jpg")
-            img_read_resized = cv.resize(img_read_cut,(28,28))
-            real_image.append(img_read_resized.flatten().astype(np.float32)/255.0)
-            x_tmp = np.reshape(real_image[i],(-1,2352))
-            x_edit.append(x_tmp)
-            p_val = sess.run(p, feed_dict={x:x_edit[i],keep_prob:1.0})
-            print(np.argmax(p_val[0]))
-            i+=1
-
-        
-        
+            # 画像の取得と顔の検出
+            img = c_frame
+            img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+            face_list = cascade.detectMultiScale(img_gray, minSize=(100, 100))
+            # 検出した顔に印を付ける
+            for (x_, y, w, h) in face_list:
+                with Timer() as t :
+                    Detect(x_,y,w,h,img,img_gray,i)
+                cv.putText(img_gray, "elasped Detect: %.3f s" % t.secs, (x_,y), cv.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 255,0), 3, cv.LINE_AA)
+                cv.putText(img_gray, "Predict: %s" % Prediction(x_edit,i), (x_,y-100), cv.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 255,0), 3, cv.LINE_AA)
+                print ("=> elasped Detect: %s s" % t.secs)
         #今度は、これを画面上に表示できれば、リソースの測定は可能。ただし、正確性にかける可能性がある。
-#         今度は、その画像を学習させることもできるので、これで正確性は増す可能性がある。
-# というか、２層CNNでこの結果なんだから、正確性が実用的ではないかもしれない
-        cv.imshow(GAUSSIAN_WINDOW_NAME, img_gray)
+        #今度は、その画像を学習させることもできるので、これで正確性は増す可能性がある。
+        # というか、２層CNNでこの結果なんだから、正確性が実用的ではないかもしれない
+        
+            cv.imshow(GAUSSIAN_WINDOW_NAME, img_gray)
         # Escキーで終了
-        key = cv.waitKey(INTERVAL)
-        if key == ESC_KEY:
-            break
+            key = cv.waitKey(INTERVAL)
+            if key == ESC_KEY:
+                break
 
         # 次のフレーム読み込み
-        end_flag, c_frame = cap.read()
+            end_flag, c_frame = cap.read()
 
     # 終了処理
-    cv.destroyAllWindows()
-    cap.release()
+        cv.destroyAllWindows()
+        cap.release()
 
+camera()
 
-# In[ ]:
-
-
-np.shape(x_image)
 
